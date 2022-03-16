@@ -185,8 +185,12 @@ export default class CoapsClient implements ProtocolClient {
     }
 
     console.debug("[binding-coap]",`CoapsClient sending ${method} to ${form.href}`);
+    
+    var urlObj = new URL(form.href);
+    urlObj.port = "5684";
+
     let req = coaps.request(
-        form.href /* string */,
+        urlObj.toString(),
         method /* "get" | "post" | "put" | "delete" */,
         content ? content.body : undefined /* Buffer */
     );
