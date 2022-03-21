@@ -25,6 +25,7 @@ import { Subscription } from 'rxjs/Subscription';
 
 import { ProtocolClient, Content } from "@node-wot/core";
 import { CoapForm } from "./coap";
+import { ConnectionResult } from "node-coap-client";
 
 export default class CoapsClient implements ProtocolClient {
 
@@ -165,7 +166,7 @@ export default class CoapsClient implements ProtocolClient {
     return true;
   }
 
-  private generateRequest(form: CoapForm, dflt: string, content?: Content): any {
+  private async generateRequest(form: CoapForm, dflt: string, content?: Content): Promise<any> {
     
     // url only works with http*
     let requestUri = url.parse(form.href.replace(/$coaps/, "https"));
@@ -189,12 +190,24 @@ export default class CoapsClient implements ProtocolClient {
     var urlObj = new URL(form.href);
     urlObj.port = "5684";
 
-    let req = coaps.request(
-        urlObj.toString(),
-        method /* "get" | "post" | "put" | "delete" */,
-        content ? content.body : undefined /* Buffer */
-    );
+    let req;
+    await coaps.tryToConnect(urlObj.toString()).then((res: ConnectionResult) => {
+      if(res===true){
+        req = coaps.request(
+            urlObj.toString(),
+            method /* "get" | "post" | "put" | "delete" */,
+            content ? content.body : undefined /* Buffer */
+        );
+      }
+      else{
+        req = new Promise((resolve, reject) => {
+          reject(`[binding-coap] tryConnect failed with ${res}`);
+        });
+      }
 
+    }).catch((err:any) => req = new Promise((resolve, reject) => {
+        reject(`[binding-coap] tryConnect failed with ${err}`);
+    }));
     return req;
   }
 }
