@@ -110,7 +110,7 @@ export default class CoapsClient implements ProtocolClient {
         coaps.observe(
           urlObj,
           "get",
-          next
+          (res: any) => next({type: form.contentType, body: res.payload})
         )
         .then(() => { /* observing was successfully set up */})
         .catch((err: any) => { error(`[binding-coap] ${err}`); })
