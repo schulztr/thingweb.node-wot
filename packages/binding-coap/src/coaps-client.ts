@@ -101,13 +101,26 @@ export default class CoapsClient implements ProtocolClient {
     let requestUri = url.parse(form.href.replace(/$coaps/, "https"));
     coaps.setSecurityParams(requestUri.hostname, this.authorization );
 
-    coaps.observe(
-      form.href,
-      "get",
-      next
-    )
-    .then(() => { /* observing was successfully set up */})
-    .catch((err: any) => { error(err); })
+    
+    var urlObj = new URL(form.href);
+    urlObj.port = "5684";
+
+    coaps.tryToConnect(urlObj.toString()).then((res: ConnectionResult) => {
+      if(res==true){
+        coaps.observe(
+          urlObj,
+          "get",
+          next
+        )
+        .then(() => { /* observing was successfully set up */})
+        .catch((err: any) => { error(`[binding-coap] ${err}`); })
+      }
+      else{
+        error(`[binding-coap] tryToConnect failed with ${res}`);
+      }
+
+    }).catch((err:any) => error(`[binding-coap] tryToConnect failed with ${err}`));
+
 
     return new Subscription(() => { coaps.stopObserving(form.href); complete(); });
   }
@@ -201,12 +214,12 @@ export default class CoapsClient implements ProtocolClient {
       }
       else{
         req = new Promise((resolve, reject) => {
-          reject(`[binding-coap] tryConnect failed with ${res}`);
+          reject(`[binding-coap] tryToConnect failed with ${res}`);
         });
       }
 
     }).catch((err:any) => req = new Promise((resolve, reject) => {
-        reject(`[binding-coap] tryConnect failed with ${err}`);
+        reject(`[binding-coap] tryToConnect failed with ${err}`);
     }));
     return req;
   }
